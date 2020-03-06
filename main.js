@@ -27,6 +27,11 @@ window.addEventListener('INJECTION_DONE', async () => {
     const frameWindow = iframe.contentWindow;
     frameWindow.parent = null;
 
+    frameWindow.addEventListener('beforeunload', function() {
+        location.reload();
+        return false;
+    });
+
     Object.defineProperty(frameWindow, 'ToolsApi', {
         value: window.ToolsApi,
         writable: false
