@@ -18,6 +18,38 @@ export default class ModManagerOffline {
         this.baseURL = url;
     }
 
+    /**
+     * 
+     * @param {string} path relative to executable path 
+     * @param {*} data 
+     */
+    async save(path, data) {
+        if (window.nw) {
+            const fs = require('fs');
+            try {
+                fs.writeFileSync(nw.App.startPath + '/' + path, data);
+            } catch (e) {
+                return false;
+            }
+           
+        } else {
+
+            try {
+                const url = new URL(this.baseURL).origin;
+                await fetch(url + '/api/save/' + path, {
+                    method: "POST",
+                    body: data
+                });
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+            
+        }
+        return true;
+    } 
+
     getAssetPathOveride(originalPath, includeAssets = false) {
         let baseURL = this.baseURL;
         if (includeAssets) {
