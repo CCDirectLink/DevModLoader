@@ -8,7 +8,7 @@ export default class Fs {
         const mods = [];
 
         if (this.isNw()) {
-            const modsFolder = this.path.join(nw.App.startPath, 'assets/', 'mods');
+            const modsFolder = this.path.join(process.cwd(), 'assets/', 'mods');
             if (this.fs.existsSync(modsFolder)) {
                 const modsFolders = this.fs.readdirSync(modsFolder);
                 for (const modFolder of modsFolders) {

@@ -21,10 +21,10 @@ export default class ModFs extends Fs {
 
             foundAssets = foundAssets.map(e => e.substring('assets/'.length));
         } else if (this.isNw()) {
-            const targetFolder = this.path.join(nw.App.startPath, this.baseDirectory, relativePath + '/');
+            const targetFolder = this.path.join(process.cwd(), this.baseDirectory, relativePath + '/');
             if (this.fs.existsSync(targetFolder)) {
                 const assets = await this._recursiveFind(targetFolder, fileExtensions);
-                foundAssets = assets.map(path => path.replace(nw.App.startPath, '').substr(8));
+                foundAssets = assets.map(path => path.replace(process.cwd(), '').substr(8));
                 if (navigator.platform === "Win32") {
                     foundAssets = foundAssets.map(path => path.replace(/\\/g, '/'));
                 }
