@@ -27,7 +27,7 @@ export default class ModManagerOffline {
         if (window.nw) {
             const fs = require('fs');
             try {
-                fs.writeFileSync(nw.App.startPath + '/' + path, data);
+                fs.writeFileSync(process.cwd() + '/' + path, data);
             } catch (e) {
                 return false;
             }
