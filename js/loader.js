@@ -58,11 +58,6 @@ export default class Loader {
             html: prettyHtml
         }, this.sw);
 
-        await sendMessage({
-            type: 'clear',
-            clear: true,
-        }, this.sw);
-
         await this._initMods();
     }
 

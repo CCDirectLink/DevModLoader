@@ -24,10 +24,6 @@ self.addEventListener('message', (event) => {
             override.set(data.url, data.html);
             break;
         }
-        case 'clear': {
-            packedModManager.clear();
-            break;
-        }
         case 'assets-override': {
             assetsOverride = data.data;
             break;
