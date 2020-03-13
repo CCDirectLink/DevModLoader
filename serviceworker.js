@@ -36,10 +36,31 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('fetch', function(event) {
-    const originalUrl = event.request.url;
-    const url = new URL(originalUrl);
-    if (originalUrl.includes(".ccmod")) {
-        
+    let originalUrl = event.request.url;
+    
+    let url = new URL(originalUrl);
+
+    if (assetsOverride.has(url.pathname)) {
+        originalUrl = location.origin + assetsOverride.get(url.pathname);
+
+        url = new URL(originalUrl);
+    }
+
+    
+
+    if (override.has(originalUrl)) {
+        event.respondWith((async function() {
+            return new Response(override.get(originalUrl), {
+                status: 200,
+                statusText: "Overriden",
+                headers: {
+                    // TODO: Make this more flexible
+                   "Content-Type": "text/html" 
+                }
+            });
+        })());
+    } else if (originalUrl.includes(".ccmod")) {
+            
         let relativePath = url.pathname;
         
         const relativeUrlStart = relativePath.indexOf(".ccmod") + ".ccmod".length;
@@ -52,7 +73,6 @@ self.addEventListener('fetch', function(event) {
         if (relativePath.startsWith('/')) {
             relativePath = relativePath.substring(1);            
         }
-
 
         if (event.request.method === "GET") {
             event.respondWith((async function() {
@@ -81,18 +101,7 @@ self.addEventListener('fetch', function(event) {
             })());          
         }
 
-    } else if (assetsOverride.has(url.pathname)) {
-        event.respondWith(fetch(assetsOverride.get(url.pathname)));
-    } else if (override.has(originalUrl)) {
-        event.respondWith((async function() {
-            return new Response(override.get(originalUrl), {
-                status: 200,
-                statusText: "Overriden",
-                headers: {
-                   "Content-Type": "text/html" 
-                }
-            });
-        })())
-
+    } else {
+        event.respondWith(fetch(originalUrl));
     }
 });
