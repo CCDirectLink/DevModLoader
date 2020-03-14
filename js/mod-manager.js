@@ -6,8 +6,8 @@ import DependencyGraph from "./models/dependency-graph.js";
 import MissingMod from "./models/missing-mod.js";
 import ErrorMod from "./models/error-mod.js";
 import Semver from "./lib/semver/semver.browser.js";
+import {VERSION} from './version.js';
 
-const VERSION = '1.0.0';
 
 export default class ModManager {
     constructor() {
