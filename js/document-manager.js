@@ -13,6 +13,18 @@ export default class DocumentManager {
         }
     }
 
+    findScriptWithText(text) {
+        const scripts = this.doc.getElementsByTagName('script');
+        for(const script of scripts) {
+            const trimSrc = script.innerHTML.trim();
+            if (trimSrc) {
+                if (trimSrc.includes(text)) {
+                    return script;
+                }
+            }
+        }
+        return null;
+    }
 
     injectBase() {
         const doc = this.doc;
@@ -25,7 +37,7 @@ export default class DocumentManager {
         refNode.parentElement.insertBefore(newNode, refNode);
     }
 
-    createScript(src, isModule) {
+    createScript(src, isModule = false) {
         const script = this.doc.createElement('script');
         script.src = src;
         script.type = isModule? "module": "text/javascript";
