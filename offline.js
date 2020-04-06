@@ -20,8 +20,38 @@ export default class ModManagerOffline {
 
     /**
      * 
+     * @param {string} path relative to executable path
+     */
+
+    async makeDir(path) {
+        if (window.nw) {
+            const fs = require('fs');
+            try {
+                fs.mkdirSync(process.cwd() + '/' + path);
+            } catch (e) {
+                return false;
+            }
+
+        } else {
+
+            try {
+                const url = new URL(this.baseURL).origin;
+                await fetch(url + '/api/make-dir/' + path, {
+                    method: "POST"
+                });
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+
+        }
+    }
+
+    /**
+     * 
      * @param {string} path relative to executable path 
-     * @param {*} data 
+     * @param {any} data 
      */
     async save(path, data) {
         if (window.nw) {
@@ -31,7 +61,7 @@ export default class ModManagerOffline {
             } catch (e) {
                 return false;
             }
-           
+
         } else {
 
             try {
@@ -45,10 +75,10 @@ export default class ModManagerOffline {
                 console.error(e);
                 return false;
             }
-            
+
         }
         return true;
-    } 
+    }
 
     getAssetPathOveride(originalPath, includeAssets = false) {
         let baseURL = this.baseURL;
@@ -62,22 +92,16 @@ export default class ModManagerOffline {
         const mods = this.modManager.getMods();
         const contexts = [];
 
-        function normalizePath(basePath, str) {
-            let relativePath = str.replace(basePath, '');
-            relativePath = relativePath.replace('.json', '');
-            
-            return relativePath.split('/').join('.');
-        }
-
         for (const mod of mods) {
             const baseMapPath = mod.baseDirectory + 'assets/data/maps/';
             const assets = mod.getAssets('data/maps');
 
 
+
             contexts.push({
                 name: mod.name,
                 path: baseMapPath.replace('assets/', ''),
-                children: assets.map(e => normalizePath(baseMapPath, e))
+                children: assets.map(e => e.replace(baseMapPath, ''))
             });
         }
 
@@ -93,8 +117,8 @@ export default class ModManagerOffline {
 
     async patchJSON(jsonData, url) {
         const patchPaths = await this.getModPatchesPaths(url);
-        
-        for (const {path, mod} of patchPaths) {
+
+        for (const { path, mod } of patchPaths) {
             let patch = {};
             try {
                 patch = await this.loadJSON(path);
@@ -109,12 +133,12 @@ export default class ModManagerOffline {
                 console.error(e);
             }
         }
-    
+
         return jsonData;
     }
 
     getModPatchesPaths(originalPath) {
-        return this.modManager.getModPatchesPaths(originalPath);    
+        return this.modManager.getModPatchesPaths(originalPath);
     }
 }
 
