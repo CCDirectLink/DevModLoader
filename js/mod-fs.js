@@ -37,7 +37,7 @@ export default class ModFs extends Fs {
         const files = [];
         if (this.isNw()) {
             const filesInFolder = this.fs.readdirSync(folderPath);
-            
+
             for (const file of filesInFolder) {
                 const filePath = this.path.join(folderPath, file);
                 if (this.fs.statSync(filePath).isFile()) {
@@ -50,7 +50,8 @@ export default class ModFs extends Fs {
                         files.push(filePath);
                     }
                 } else {
-                    files.push(...await this._recursiveFind(filePath, fileExtensions)); 
+                    files.push(filePath + '/');
+                    files.push(...await this._recursiveFind(filePath, fileExtensions));
                 }
             }
         }
