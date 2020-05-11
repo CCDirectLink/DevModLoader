@@ -1,17 +1,32 @@
 
 import ModManagerOffline from "./../../../offline.js";
+
 const modManager = new ModManagerOffline;
 
-const requestOverrides = {
-
-};
-window.setAjaxOverride = function(path, data) {
-    requestOverrides[path] = data;
-}
-window.addStageScript("preload", async function() {
+window.addStageScript("preload", async function () {
     await modManager.init();
 });
 
+// this injection allows assets url replacement for all non json loadables
+callWhenModuleLoaded("impact.base.loader", function () {
+    const cacheTypesWhiteList = [
+        'Image',
+        'MultiAudio',
+        'WebAudioBuffer',
+        'Video'
+    ];
+    ig.Loadable.inject({
+        init: function (path) {
+            if (typeof path === "string") {
+                const shouldOverride = cacheTypesWhiteList.some(type => type === this.cacheType);
+                if (shouldOverride) {
+                    path = modManager.getAssetPathOveride(path.trim());
+                }
+            }
+            this.parent(path);
+        }
+    });
+});
 
 $.ajaxSetup({
     beforeSend: (_, settings) => {
@@ -20,32 +35,26 @@ $.ajaxSetup({
         }
 
         const originalUrl = settings.url;
-
-        let requestData = requestOverrides[originalUrl];
+        const patchedUrl = modManager.getAssetPathOveride(originalUrl);
+        settings.url = patchedUrl;
         const patchPaths = modManager.getModPatchesPaths(originalUrl);
 
         if (patchPaths.length) {
-            (async function() {     
+            (async function () {
                 if (originalUrl.endsWith('.json')) {
                     let successArgs;
                     try {
-                        let jsonData = null;
-                        if (!requestData) {
-                            jsonData = await modManager.loadJSON(originalUrl);
-                        }
+                        let jsonData = await modManager.loadJSON(patchedUrl);
                         await modManager.patchJSON(jsonData, originalUrl);
                         successArgs = jsonData;
                     } catch (e) {
                         settings.error.apply(settings.context, [e]);
                         return;
                     }
-            
+
                     settings.success.apply(settings.context, [successArgs]);
                 }
             })()
-            return false;
-        } else if (requestData) {
-            settings.success.apply(settings.context, [JSON.parse(JSON.stringify(requestData))]);;
             return false;
         }
     }
