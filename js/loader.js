@@ -4,7 +4,7 @@ function sendMessage(message, serviceWorker) {
     const channel = new MessageChannel();
 
     return new Promise((resolve) => {
-        channel.port1.onmessage = function() {
+        channel.port1.onmessage = function () {
             resolve()
         };
         serviceWorker.postMessage(message, [channel.port2]);
@@ -24,23 +24,23 @@ export default class Loader {
     setServiceWorker(sw) {
         this.sw = sw;
     }
-    
+
     setFrame(frame) {
         this.frame = frame;
 
         this.onFrameSet(frame);
     }
-    
+
     onFrameSet(frame) {
         const frameWindow = frame.contentWindow;
         frameWindow.preload = async () => {
             await this.loadStage('preload');
         }
-    
+
         frameWindow.postload = async () => {
             await this.loadStage('postload');
         };
-    
+
         frameWindow.prestart = async () => {
             await this.loadStage('prestart');
         };
@@ -70,8 +70,7 @@ export default class Loader {
         this.modManager.sortModsByDependencies();
         this.modManager.checkForIssues();
 
-        // get all assets override urls
-        const assetsOverrides = this.modManager.getAllAssetsOverrides();
+        const assetsOverrides = new Map;
         assetsOverrides.set('/assets/mod/icon.png', location.href.split('/').slice(0, -1).concat(['media', 'icon.png']).join('/'));
         await sendMessage({
             type: 'assets-override',
