@@ -3,7 +3,7 @@ import DocumentManager from "./document-manager.js";
 export default class HtmlPatcher {
     constructor() {
         this.gameWindow = document.implementation.createHTMLDocument();
-        
+
         this.docManager = new DocumentManager(this.gameWindow);
     }
 
@@ -15,7 +15,7 @@ export default class HtmlPatcher {
 
     async createCustomGameHtml() {
         const html = await this.getGameHtml();
-        
+
         this.docManager.mergeGameHtml(html);
 
         const script = this.docManager.findScriptWithText(`window['process']`);
@@ -32,7 +32,11 @@ ${script.innerHTML}
 
 
         this.docManager.deferGameScriptCall();
-        
+
+        const igInterceptorPath = this.getBaseUrl() + '/js/game/ig-interceptor.js';
+        const igInterceptorrScript = this.docManager.createScript(igInterceptorPath, true);
+        this.docManager.insertBefore(igInterceptorrScript, this.docManager.findGameScript());
+
         const patchHelperPath = this.getBaseUrl() + '/js/game/patching/patch-override.js';
         const patchHelperScript = this.docManager.createScript(patchHelperPath, true);
         this.docManager.insertBefore(patchHelperScript, this.docManager.findGameScript());
@@ -40,9 +44,9 @@ ${script.innerHTML}
         const stageHelperPath = this.getBaseUrl() + '/js/game/stage-helper.js';
         const stageHelperScript = this.docManager.createScript(stageHelperPath, true);
         this.docManager.insertBefore(stageHelperScript, this.docManager.findGameScript());
-    
 
-        
+
+
         this.docManager.injectPrestart();
         this.docManager.injectBase();
 
