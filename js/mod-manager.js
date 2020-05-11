@@ -6,7 +6,7 @@ import DependencyGraph from "./models/dependency-graph.js";
 import MissingMod from "./models/missing-mod.js";
 import ErrorMod from "./models/error-mod.js";
 import Semver from "./lib/semver/semver.browser.js";
-import {VERSION} from './version.js';
+import { VERSION } from './version.js';
 
 
 export default class ModManager {
@@ -19,25 +19,14 @@ export default class ModManager {
 
     onFrameSet(frame) {
         const window = frame.contentWindow;
-        window.registerPlugin = async (name, plugin) => {
-            this.addPlugin(name, plugin);
-        };
         const modsCopy = this.mods.slice(0);
         window.mods = modsCopy;
         window.activeMods = modsCopy;
-        
-        window.getAssetPath = (originalPath) => {
-            return this.getAssetPathOveride(originalPath);
-        }
-
-        window.getModPatches = async (originalPath) => {
-            return await this.getModPatches(originalPath);       
-        }
     }
 
     getAssetPathOveride(originalPath) {
         let foundPath = originalPath;
-        for(const mod of this.mods) {
+        for (const mod of this.mods) {
             const modPath = mod.getAsset(originalPath);
             if (modPath) {
                 foundPath = modPath;
@@ -48,7 +37,7 @@ export default class ModManager {
 
     getModPatchesPaths(originalPath) {
         const foundPaths = [];
-        for(const mod of this.mods) {
+        for (const mod of this.mods) {
             if (!(mod instanceof GameMod)) {
                 const modPath = mod.getAsset(originalPath + '.patch');
                 if (modPath) {
@@ -60,32 +49,32 @@ export default class ModManager {
                 }
             }
         }
-        return foundPaths;       
+        return foundPaths;
     }
 
     async initMods() {
         this.mods.splice(0);
-        
+
         const mods = [];
         const ccloader = new FakeMod("ccloader", "0.0.0");
 
         mods.push(ccloader);
-        
 
-        const {changelog} = await fetch('/assets/data/changelog.json').then(e => e.json());
+
+        const { changelog } = await fetch('/assets/data/changelog.json').then(e => e.json());
         this.gameMod = new GameMod("crosscode", changelog[0].version);
         mods.push(this.gameMod);
 
         mods.push(new FakeMod("devmodloader", VERSION));
 
         const packages = await this._getMods();
-        
+
         let disabledMods = localStorage.getItem('disabled-mods') || "{}";
         if (typeof disabledMods === "string") {
             disabledMods = JSON.parse(disabledMods);
         }
-        
-        for (const {path, error, data} of packages) {
+
+        for (const { path, error, data } of packages) {
             if (error) {
                 const mod = new ErrorMod(path + '/package.json', "0.0.0");
                 mod.setError(error);
@@ -101,7 +90,7 @@ export default class ModManager {
 
 
         const missing = {};
-        const notMissing = {}; 
+        const notMissing = {};
         mods.forEach(mod => notMissing[mod.name] = true);
         for (const mod of mods) {
             const dependencies = Object.keys(mod.dependencies);
@@ -142,7 +131,7 @@ export default class ModManager {
             }
         }
 
-        
+
     }
 
     findMod(name) {
@@ -184,7 +173,7 @@ export default class ModManager {
                     const dependent = node.dependent[dependentName];
                     const instance = dependent.getInstance();
                     const versionToCheck = instance.dependencies[node.name];
-            
+
                     if (!Semver.satisfies(node.version, versionToCheck)) {
                         const reason = `${dependentName} expects ${node.name} to be ${versionToCheck}, but it is ${node.version}.`;
                         const errorInstance = new ErrorMod(instance.name, instance.version);
