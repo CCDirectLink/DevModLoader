@@ -23,6 +23,7 @@ callWhenModuleLoaded("impact.base.loader", function () {
                 const shouldOverride = cacheTypesWhiteList.some(type => type === this.cacheType);
                 if (shouldOverride) {
                     path = modManager.getAssetPathOveride(path.trim(), true);
+                    path = modManager.relativeToFullPath(path);
                 }
             }
             this.parent(path);
