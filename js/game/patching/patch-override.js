@@ -2,7 +2,9 @@
 import ModManagerOffline from "./../../../offline.js";
 
 const modManager = new ModManagerOffline;
+const baseURL = 'http://localhost:4000/assets/';
 
+modManager.setBaseURL(baseURL);
 window.addStageScript("preload", async function () {
     await modManager.init();
 });
@@ -20,7 +22,7 @@ callWhenModuleLoaded("impact.base.loader", function () {
             if (typeof path === "string") {
                 const shouldOverride = cacheTypesWhiteList.some(type => type === this.cacheType);
                 if (shouldOverride) {
-                    path = modManager.getAssetPathOveride(path.trim());
+                    path = modManager.getAssetPathOveride(path.trim(), true);
                 }
             }
             this.parent(path);
@@ -35,7 +37,7 @@ $.ajaxSetup({
         }
 
         const originalUrl = settings.url;
-        const patchedUrl = modManager.getAssetPathOveride(originalUrl);
+        let patchedUrl = modManager.relativeToFullPath(modManager.getAssetPathOveride(originalUrl));
         settings.url = patchedUrl;
         const patchPaths = modManager.getModPatchesPaths(originalUrl);
 
