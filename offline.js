@@ -4,7 +4,7 @@ import Patcher from "./js/game/patching/patch.js";
 export default class ModManagerOffline {
     constructor() {
         this.modManager = new ModManager;
-        this.patcher = new Patcher(this.modManager);
+        this.patcher = new Patcher(this);
         this.baseURL = '';
     }
 
@@ -22,7 +22,6 @@ export default class ModManagerOffline {
      * 
      * @param {string} path relative to executable path
      */
-
     async makeDir(path) {
         if (window.nw) {
             const fs = require('fs');
@@ -80,12 +79,13 @@ export default class ModManagerOffline {
         return true;
     }
 
-    getAssetPathOveride(originalPath, includeAssets = false) {
-        let baseURL = this.baseURL;
-        if (includeAssets) {
-            baseURL += 'assets/';
-        }
-        return baseURL + this.modManager.getAssetPathOveride(originalPath);
+    /**
+     * 
+     * @param {string} originalPath
+     * @returns override path relative to /assets/ 
+     */
+    getAssetPathOveride(originalPath) {
+        return this.modManager.getAssetPathOveride(originalPath);
     }
 
     async getAllMaps() {
@@ -108,20 +108,35 @@ export default class ModManagerOffline {
         return contexts;
     }
 
-    async loadJSON(jsonPath) {
-        if (typeof jsonPath !== "string") {
-            return jsonPath;
+    /**
+     * 
+     * @param {string} url to json resource
+     * @returns {any} 
+     */
+    async loadJSON(url) {
+        if (typeof url !== "string") {
+            return url;
         }
-        return fetch(this.baseURL + jsonPath).then(e => e.json());
+
+        return fetch(url).then(e => e.json());
     }
 
+    relativeToFullPath(path) {
+        return this.baseURL + path;
+    }
+
+    /**
+     * 
+     * @param {any} jsonData to patch 
+     * @param {string} url to match for patch files 
+     */
     async patchJSON(jsonData, url) {
         const patchPaths = await this.getModPatchesPaths(url);
-
         for (const { path, mod } of patchPaths) {
             let patch = {};
             try {
-                patch = await this.loadJSON(path);
+                let fullPath = this.relativeToFullPath(path);
+                patch = await this.loadJSON(fullPath);
             } catch (e) {
                 console.error(e);
                 continue;
