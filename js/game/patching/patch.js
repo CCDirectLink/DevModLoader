@@ -17,7 +17,8 @@ export default class Patcher {
             if (fromGame) {
                 let assetsOverride = this.modManager.getAssetPathOveride(url);
                 assetsOverride = this.modManager.relativeToFullPath(assetsOverride);
-                return fetch(assetsOverride).then(e => e.json());;
+                const jsonData = await fetch(assetsOverride).then(e => e.json());
+                return this.loadPatchedJson(jsonData, url);
             } else {
                 // Include (mod file)
                 const modRelativePath = mod.baseDirectory.replace('assets/', '') + url;
@@ -27,4 +28,7 @@ export default class Patcher {
         }, this.debugState);
     }
 
+    async loadPatchedJson(jsonData, url) {
+        return this.modManager.patchJSON(jsonData, url);
+    }
 }
