@@ -1,7 +1,7 @@
 export default class Fs {
     constructor() {
         this.fs = this.isNw() ? require('fs') : null;
-        this.path = this.isNw() ? require('path'): null;
+        this.path = this.isNw() ? require('path') : null;
     }
 
     async getModPaths() {

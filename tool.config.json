@@ -1,6 +1,5 @@
 {
     "name": "DevModLoader",
     "version": "1.0.1",
-    "htmlMain": "index.html",
-    "offlineScript": "offline.js"
+    "offlineScript": "js/mod-manager.js"
 }

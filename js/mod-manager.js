@@ -8,58 +8,23 @@ import ErrorMod from "./models/error-mod.js";
 import Semver from "./lib/semver/semver.browser.js";
 import { VERSION } from './version.js';
 
+import Patcher from "./game/patching/patch.js";
 
-export default class ModManager {
+export default class ModManagerOffline {
     constructor() {
+        this.patcher = new Patcher(this);
+        this.baseURL = '';
         this.fs = new Fs;
         this.mods = [];
         this.depGraph = new DependencyGraph;
         this.gameMod = null;
-    }
 
-    onFrameSet(frame) {
-        const window = frame.contentWindow;
-        const modsCopy = this.mods.slice(0);
-        window.mods = modsCopy;
-        window.activeMods = modsCopy;
-    }
-
-    getAssetPathOveride(originalPath) {
-        let foundPath = originalPath;
-        for (const mod of this.mods) {
-            const modPath = mod.getAsset(originalPath);
-            if (modPath) {
-                foundPath = modPath;
-            }
-        }
-        return foundPath;
-    }
-
-    getModPatchesPaths(originalPath) {
-        const foundPaths = [];
-        for (const mod of this.mods) {
-            if (!(mod instanceof GameMod)) {
-                const modPath = mod.getAsset(originalPath + '.patch');
-                if (modPath) {
-                    const patchInfo = {
-                        mod: mod,
-                        path: modPath
-                    };
-                    foundPaths.push(patchInfo);
-                }
-            }
-        }
-        return foundPaths;
     }
 
     async initMods() {
         this.mods.splice(0);
 
         const mods = [];
-        const ccloader = new FakeMod("ccloader", "0.0.0");
-
-        mods.push(ccloader);
-
 
         const { changelog } = await fetch('/assets/data/changelog.json').then(e => e.json());
         this.gameMod = new GameMod("crosscode", changelog[0].version);
@@ -130,8 +95,6 @@ export default class ModManager {
                 }
             }
         }
-
-
     }
 
     findMod(name) {
@@ -220,11 +183,11 @@ export default class ModManager {
         const modPackages = [];
         for (const modPath of modPaths) {
             const packageInfo = {
-                path: modPath,
+                path: this.relativeToFullPath(modPath.replace(location.origin + '/assets/', '')),
                 error: null
             };
             try {
-                packageInfo.data = await fetch(modPath + '/package.json').then(response => response.json());
+                packageInfo.data = await fetch(packageInfo.path + '/package.json').then(response => response.json());
             } catch (e) {
                 packageInfo.error = 'Error while parsing package.json\n' + e.message;
             }
@@ -233,4 +196,184 @@ export default class ModManager {
         }
         return modPackages;
     }
+
+    getModPatchesPaths(originalPath) {
+        const foundPaths = [];
+        for (const mod of this.mods) {
+            if (!(mod instanceof GameMod)) {
+                const modPath = mod.getAsset(originalPath + '.patch');
+                if (modPath) {
+                    const patchInfo = {
+                        mod: mod,
+                        path: modPath
+                    };
+                    foundPaths.push(patchInfo);
+                }
+            }
+        }
+        return foundPaths;
+    }
+
+
+    onFrameSet(frame) {
+        const window = frame.contentWindow;
+        const modsCopy = this.mods.slice(0);
+        window.mods = modsCopy;
+        window.activeMods = modsCopy;
+    }
+
+    async init() {
+        await this.initMods();
+        this.sortModsByDependencies();
+        this.checkForIssues();
+    }
+
+
+    setBaseURL(url = '') {
+        this.baseURL = url;
+    }
+
+    /**
+     * 
+     * @param {string} path relative to executable path
+     */
+    async makeDir(path) {
+        if (window.nw) {
+            const fs = require('fs');
+            try {
+                fs.mkdirSync(process.cwd() + '/' + path);
+            } catch (e) {
+                return false;
+            }
+
+        } else {
+
+            try {
+                const url = new URL(this.baseURL).origin;
+                await fetch(url + '/api/make-dir/' + path, {
+                    method: "POST"
+                });
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+
+        }
+    }
+
+    /**
+     * 
+     * @param {string} path relative to executable path 
+     * @param {any} data 
+     */
+    async save(path, data) {
+        if (window.nw) {
+            const fs = require('fs');
+            try {
+                fs.writeFileSync(process.cwd() + '/' + path, data);
+            } catch (e) {
+                return false;
+            }
+
+        } else {
+
+            try {
+                const url = new URL(this.baseURL).origin;
+                await fetch(url + '/api/save/' + path, {
+                    method: "POST",
+                    body: data
+                });
+                return true;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+
+        }
+        return true;
+    }
+
+    /**
+     * 
+     * @param {string} originalPath
+     * @returns override path relative to /assets/ 
+     */
+    getAssetPathOveride(originalPath) {
+        let foundPath = originalPath;
+        for (const mod of this.mods) {
+            const modPath = mod.getAsset(originalPath);
+            if (modPath) {
+                foundPath = modPath;
+            }
+        }
+        return foundPath;
+    }
+
+    /**
+     * 
+     */
+    async getAllMaps() {
+        const mods = this.getMods();
+        const contexts = [];
+
+        for (const mod of mods) {
+            const baseMapPath = mod.baseDirectory + 'assets/data/maps/';
+            const assets = mod.getAssets('data/maps');
+
+            contexts.push({
+                name: mod.name,
+                path: baseMapPath.replace('assets/', ''),
+                children: assets.map(e => e.replace(baseMapPath, ''))
+            });
+        }
+
+        return contexts;
+    }
+
+    /**
+     * 
+     * @param {string} url to json resource
+     * @returns {any} 
+     */
+    async loadJSON(url) {
+        if (typeof url !== "string") {
+            return url;
+        }
+
+        return fetch(url).then(e => e.json());
+    }
+
+    relativeToFullPath(path) {
+        return this.baseURL + path;
+    }
+
+    /**
+     * 
+     * @param {any} jsonData to patch 
+     * @param {string} url to match for patch files 
+     */
+    async patchJSON(jsonData, url) {
+        const patchPaths = await this.getModPatchesPaths(url);
+        for (const { path, mod } of patchPaths) {
+            let patch = {};
+            try {
+                let fullPath = this.relativeToFullPath(path);
+                patch = await this.loadJSON(fullPath);
+            } catch (e) {
+                console.error(e);
+                continue;
+            }
+
+            try {
+                await this.patcher.applyPatch(jsonData, mod, patch);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        return jsonData;
+    }
 }
+
+
