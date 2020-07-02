@@ -12,13 +12,8 @@ export default class Fs {
             if (this.fs.existsSync(modsFolder)) {
                 const modsFolders = this.fs.readdirSync(modsFolder);
                 for (const modFolder of modsFolders) {
-                    let isMod = modFolder.endsWith('.ccmod');
-
-                    if (!isMod) {
-                        isMod = this.fs.existsSync(this.path.join(modsFolder, modFolder, 'package.json'));
-                    }
-
-                    if (isMod) {
+                    let modExists = this.fs.existsSync(this.path.join(modsFolder, modFolder, 'package.json'));;
+                    if (modExists) {
                         mods.push(location.origin + '/assets/mods/' + modFolder);
                     }
                 }

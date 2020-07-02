@@ -8,19 +8,7 @@ export default class ModFs extends Fs {
 
     async getAssets(relativePath, fileExtensions) {
         let foundAssets = [];
-
-        if (this.baseDirectory.includes('.ccmod')) {
-            foundAssets = await fetch('/' + this.baseDirectory, {
-                method: "POST",
-                headers: {
-                    'x-cmd': 'get-files',
-                    'x-dir': relativePath,
-                },
-                body: JSON.stringify(fileExtensions || [])
-            }).then(response => response.json());
-
-            foundAssets = foundAssets.map(e => e.substring('assets/'.length));
-        } else if (this.isNw()) {
+        if (this.isNw()) {
             const targetFolder = this.path.join(process.cwd(), this.baseDirectory, relativePath + '/');
             if (this.fs.existsSync(targetFolder)) {
                 const assets = await this._recursiveFind(targetFolder, fileExtensions);
